@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyTodo</title>
+  <style>
+    /* ===== CSS 변수 ===== */
+    :root {
+      --color-bg: #f5f7fa;
+      --color-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --color-text: #1a202c;
+      --color-text-muted: #718096;
+      --color-primary: #4a6cf7;
+      --color-primary-hover: #3a5ce4;
+      --color-danger: #e53e3e;
+
+      --cat-work-bg: #ebf4ff;
+      --cat-work-text: #2b6cb0;
+      --cat-personal-bg: #f0fff4;
+      --cat-personal-text: #276749;
+      --cat-study-bg: #faf5ff;
+      --cat-study-text: #6b46c1;
+    }
+
+    /* ===== 기본 리셋 ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .app {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ===== 카드 공통 ===== */
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    /* ===== 1. 헤더 ===== */
+    .header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .header .today-date {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ===== 2. 진행률 카드 ===== */
+    .progress-bar-wrap {
+      background: var(--color-border);
+      border-radius: 999px;
+      height: 10px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--color-primary);
+      width: 0%;
+      transition: width 0.3s ease;
+      border-radius: 999px;
+    }
+
+    .progress-summary {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    .progress-category {
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ===== 3. 입력 영역 ===== */
+    .input-area {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .input-area input[type="text"] {
+      flex: 1;
+      min-width: 0;
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .input-area input[type="text"]:focus {
+      border-color: var(--color-primary);
+    }
+
+    .input-area select {
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: var(--color-surface);
+      cursor: pointer;
+      outline: none;
+    }
+
+    .btn-add {
+      padding: 10px 18px;
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { background: var(--color-primary-hover); }
+
+    /* ===== 4. 필터 탭 ===== */
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 7px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-surface);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    .tab-btn.active {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .tab-badge {
+      display: inline-block;
+      background: rgba(0,0,0,0.15);
+      color: inherit;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      padding: 0 6px;
+      margin-left: 4px;
+    }
+
+    /* ===== 5. 할 일 목록 ===== */
+    #task-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      background: var(--color-surface);
+      transition: opacity 0.15s;
+    }
+
+    .task-item.completed {
+      opacity: 0.5;
+    }
+
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      opacity: 0.5;
+      transition: opacity 0.15s;
+    }
+
+    .btn-delete:hover { opacity: 1; }
+
+    .empty-message {
+      text-align: center;
+      color: var(--color-text-muted);
+      padding: 32px 0;
+      font-size: 0.95rem;
+    }
+
+    /* ===== 카테고리 배지 ===== */
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    .badge-업무  { background: var(--cat-work-bg);     color: var(--cat-work-text); }
+    .badge-개인  { background: var(--cat-personal-bg); color: var(--cat-personal-text); }
+    .badge-공부  { background: var(--cat-study-bg);    color: var(--cat-study-text); }
+
+    /* ===== 6. 하단 액션 ===== */
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn-clear {
+      padding: 8px 14px;
+      background: none;
+      border: 1px solid var(--color-danger);
+      color: var(--color-danger);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-clear:hover:not(:disabled) { background: var(--color-danger); color: #fff; }
+    .btn-clear:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .stats-text {
+      font-size: 0.875rem;
+      color: var(--color-text-muted);
+    }
+
+    /* ===== 인라인 편집 input ===== */
+    .task-edit-input {
+      flex: 1;
+      min-width: 0;
+      padding: 2px 6px;
+      border: 1px solid var(--color-primary);
+      border-radius: 4px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    .btn-edit {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+    }
+
+    .btn-edit:hover { opacity: 1; }
+
+    /* ===== 다크 테마 변수 ===== */
+    [data-theme="dark"] {
+      --color-bg: #0f1117;
+      --color-surface: #1a1d27;
+      --color-border: #2d3148;
+      --color-text: #e2e8f0;
+      --color-text-muted: #94a3b8;
+      --color-primary: #7b93ff;
+      --color-primary-hover: #6070e0;
+      --color-danger: #fc8181;
+
+      --cat-work-bg: #1a2744;
+      --cat-work-text: #90cdf4;
+      --cat-personal-bg: #1a2e22;
+      --cat-personal-text: #9ae6b4;
+      --cat-study-bg: #231a3a;
+      --cat-study-text: #d6bcfa;
+    }
+
+    /* ===== 테마 토글 버튼 ===== */
+    .btn-theme {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      line-height: 1.5;
+    }
+
+    .btn-theme:hover { border-color: var(--color-primary); }
+
+    /* ===== 키보드 포커스 링 ===== */
+    :focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 2px;
+    }
+
+    /* ===== 반응형 ===== */
+    /* 필터 탭: 좁은 화면에서 가로 스크롤 없이 줄바꿈 */
+    .filter-tabs {
+      flex-wrap: wrap;
+    }
+
+    /* 매우 긴 텍스트: 편집 모드에서는 전체 표시 */
+    .task-edit-input {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    @media (max-width: 400px) {
+      .input-area { flex-direction: column; }
+      .input-area select, .btn-add { width: 100%; }
+      body { padding: 10px; }
+      .card { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- 1. 헤더 -->
+    <header class="card header">
+      <h1>MyTodo</h1>
+      <span id="today-date" class="today-date"></span>
+      <button id="btn-theme" class="btn-theme" aria-label="테마 전환">🌙</button>
+    </header>
+
+    <!-- 2. 진행률 카드 -->
+    <section class="card" aria-label="진행률">
+      <div class="progress-bar-wrap">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+      <p id="progress-summary" class="progress-summary">0 / 0 완료</p>
+      <p id="progress-category" class="progress-category"></p>
+    </section>
+
+    <!-- 3. 입력 영역 -->
+    <section class="card" aria-label="할 일 입력">
+      <div class="input-area">
+        <input type="text" id="task-input" placeholder="할 일을 입력하세요..." autocomplete="off">
+        <select id="category-select">
+          <option value="업무">업무</option>
+          <option value="개인">개인</option>
+          <option value="공부">공부</option>
+        </select>
+        <button class="btn-add" id="btn-add">추가</button>
+      </div>
+    </section>
+
+    <!-- 4. 필터 탭 -->
+    <nav class="card filter-tabs" aria-label="카테고리 필터">
+      <button class="tab-btn active" data-filter="전체">전체</button>
+      <button class="tab-btn" data-filter="업무">업무</button>
+      <button class="tab-btn" data-filter="개인">개인</button>
+      <button class="tab-btn" data-filter="공부">공부</button>
+    </nav>
+
+    <!-- 5. 할 일 목록 -->
+    <main class="card">
+      <ul id="task-list">
+        <li class="empty-message">할 일이 없어요 ✓</li>
+      </ul>
+    </main>
+
+    <!-- 6. 하단 액션 -->
+    <footer class="card footer-actions">
+      <button class="btn-clear" id="btn-clear" disabled>완료된 항목 삭제</button>
+      <span id="stats-text" class="stats-text">완료 0개 · 미완료 0개</span>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
