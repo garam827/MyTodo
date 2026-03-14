@@ -23,13 +23,36 @@ function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+// ===== 키워드 자동 카테고리 분류 =====
+
+const CATEGORY_KEYWORDS = {
+  '업무': ['회의', '보고서', '기획', '발표', '미팅', '출장', '계약', '제안서', '업무', '프로젝트', '마감', '클라이언트', '거래처', '이메일', '슬랙', '일정', '인터뷰', '채용'],
+  '개인': ['운동', '헬스', '쇼핑', '청소', '요리', '병원', '약속', '여행', '친구', '가족', '취미', '영화', '산책', '독서', '식사', '휴식', '집안일', '빨래', '장보기'],
+  '공부': ['공부', '강의', '책', '과제', '시험', '복습', '예습', '학습', '연구', '논문', '자격증', '코딩', '개발', '언어', '수학', '영어', '강좌', '튜토리얼', '스터디'],
+};
+
+// 입력 텍스트에서 카테고리 자동 감지 (매칭된 키워드 반환, 없으면 null)
+function detectCategory(text) {
+  var lower = text.toLowerCase();
+  for (var cat in CATEGORY_KEYWORDS) {
+    var keywords = CATEGORY_KEYWORDS[cat];
+    for (var i = 0; i < keywords.length; i++) {
+      if (lower.includes(keywords[i])) {
+        return { category: cat, keyword: keywords[i] };
+      }
+    }
+  }
+  return null;
+}
+
 // ===== 상태 =====
 
 const state = {
   tasks: [],
   currentFilter: '전체',
   lastCategory: '업무',
-  editingId: null,  // 현재 인라인 편집 중인 task id
+  editingId: null,      // 현재 인라인 편집 중인 task id
+  manualCategory: false, // 사용자가 수동으로 카테고리를 선택했는지 여부
 };
 
 const FILTERS = ['전체', '업무', '개인', '공부'];
@@ -240,6 +263,8 @@ function addTask() {
 
   input.value = '';
   select.value = state.lastCategory;
+  state.manualCategory = false; // 다음 입력부터 자동 분류 재활성화
+  document.getElementById('category-hint').style.display = 'none';
   input.focus();
   render();
 }
@@ -308,10 +333,29 @@ document.addEventListener('DOMContentLoaded', function () {
     if (e.key === 'Enter') addTask();
   });
 
+  // 실시간 키워드 감지 → 카테고리 자동 선택
+  document.getElementById('task-input').addEventListener('input', function () {
+    if (state.manualCategory) return; // 수동 선택 중이면 무시
+    var result = detectCategory(this.value);
+    var select = document.getElementById('category-select');
+    var hint = document.getElementById('category-hint');
+    if (result) {
+      select.value = result.category;
+      hint.textContent = '"' + result.keyword + '" → ' + result.category + ' 자동 선택';
+      hint.style.display = 'block';
+    } else {
+      select.value = state.lastCategory;
+      hint.style.display = 'none';
+    }
+  });
+
   document.getElementById('btn-clear').addEventListener('click', clearCompleted);
 
+  // 수동 카테고리 변경 시 자동 분류 잠금
   document.getElementById('category-select').addEventListener('change', function () {
     state.lastCategory = this.value;
+    state.manualCategory = true;
+    document.getElementById('category-hint').style.display = 'none';
   });
 
   // 다크 테마 토글

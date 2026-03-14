@@ -288,6 +288,14 @@
       color: var(--color-text-muted);
     }
 
+    /* ===== 자동 카테고리 힌트 ===== */
+    .category-hint {
+      display: none;
+      margin-top: 6px;
+      font-size: 0.8rem;
+      color: var(--color-primary);
+    }
+
     /* ===== 인라인 편집 input ===== */
     .task-edit-input {
       flex: 1;
@@ -403,6 +411,7 @@
         </select>
         <button class="btn-add" id="btn-add">추가</button>
       </div>
+      <p id="category-hint" class="category-hint" aria-live="polite"></p>
     </section>
 
     <!-- 4. 필터 탭 -->
